@@ -34,19 +34,19 @@ public class Utils {
 
     public static void loadLibraries(File libFile) {
         libFile.mkdirs();
-        log("§eIniciando carregamento de libs...");
+        jarLoaderlog("§eIniciando carregamento de libs...");
         for (File file : Objects.requireNonNull(libFile.listFiles())) {
             if (file.getName().endsWith(".jar")) {
                 try {
                     // log("§eCarregando jar " + file.getName() + "§e...");
                     addClassPath(file);
                 } catch (Exception e) {
-                    log("§cOcorreu um erro ao carregar a jar " + file.getName());
+                    jarLoaderlog("§cOcorreu um erro ao carregar a jar " + file.getName());
                     e.printStackTrace();
                 }
             }
         }
-        log("§aCarregamento de libs finalizado!");
+        jarLoaderlog("§aCarregamento de libs finalizado!");
     }
 
     private static void addClassPath(final File file) throws Exception {
@@ -60,11 +60,11 @@ public class Utils {
         if (URLClassLoader.class.isAssignableFrom(systemClassLoader.getClass())) {
             method.invoke(systemClassLoader, url);
         } else {
-            log("§cO Java instalado não é compatível com o carregamento das libs.");
+            jarLoaderlog("§cO Java instalado não é compatível com o carregamento das libs.");
         }
     }
 
-    public static void log(String msg) {
+    public static void jarLoaderlog(String msg) {
         Bukkit.getConsoleSender().sendMessage("§b[mkAPI JarLoader] §f" + msg);
     }
 

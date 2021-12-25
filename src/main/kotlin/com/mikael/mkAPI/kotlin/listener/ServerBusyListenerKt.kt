@@ -13,7 +13,7 @@ class ServerBusyListenerKt : EventsManager() {
         if (!Main.serverEnabled) {
             e.disallow(
                 AsyncPlayerPreLoginEvent.Result.KICK_OTHER,
-                "§cO servidor ainda não está disponível. Tente novamente em alguns instantes."
+                "§cO servidor ainda não está disponível. Tente novamente em alguns instantes!"
             )
         }
     }
