@@ -1,0 +1,4 @@
+name: mkAPI
+author: Mikael
+version: 1.0
+main: com.mikael.mkAPI.java.Main
