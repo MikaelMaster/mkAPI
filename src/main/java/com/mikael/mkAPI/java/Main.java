@@ -3,7 +3,6 @@ package com.mikael.mkAPI.java;
 import com.mikael.mkAPI.kotlin.MainKt;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
-
 import java.io.*;
 
 public class Main extends JavaPlugin {
@@ -21,6 +20,7 @@ public class Main extends JavaPlugin {
             if (ktLib1.exists() && ktLib2.exists() && ktLib3.exists() && ktLib4.exists()) {
                 Utils.jarLoaderlog("§aTodas as libs já estão em disco.");
             } else {
+                Utils.jarLoaderlog("§cOps, as libs não estão em disco. :c");
                 Utils.jarLoaderlog("§eIniciando download de libs...");
                 Utils.downloadFile("https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib/1.6.10/kotlin-stdlib-1.6.10.jar", "plugins/mkAPI/libs/kotlin-stdlib-1.6.10.jar");
                 Utils.jarLoaderlog("§625% concluído(s).");
