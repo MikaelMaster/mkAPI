@@ -1,4 +1,5 @@
 name: mkAPI
+version: 1.2
+softdepend: [ Vault ]
 author: Mikael
-version: 1.0
-main: com.mikael.mkAPI.java.Main
+main: com.mikael.mkAPI.java.spigot.SpigotMain

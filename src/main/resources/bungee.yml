@@ -1,0 +1,4 @@
+name: mkAPIProxy
+version: 1.0
+author: Mikael
+main: com.mikael.mkAPI.java.bungee.BungeeMain

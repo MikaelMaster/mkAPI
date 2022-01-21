@@ -2,10 +2,11 @@ plugins {
     java
     kotlin("jvm") version "1.4.21"
     `maven-publish`
+    id("com.github.johnrengelman.shadow") version "6.1.0"
 }
 
 group = "com.mikael"
-version = "1.0"
+version = "1.2"
 
 java.sourceCompatibility = JavaVersion.VERSION_1_8
 java.targetCompatibility = JavaVersion.VERSION_1_8
@@ -17,22 +18,22 @@ repositories {
     maven("https://oss.sonatype.org/content/repositories/snapshots/")
     maven("https://jitpack.io/")
     maven("https://m2.dv8tion.net/releases")
-    // maven("https://mvnrepository.com/artifact/me.lucko.luckperms/luckperms-api")
 }
 
 dependencies {
     compileOnly(kotlin("stdlib"))
-    compileOnly("com.github.MilkBowl:VaultAPI:1.7")
     compileOnly("org.spigotmc:spigot-api:1.8.8-R0.1-SNAPSHOT")
+    compileOnly("com.github.MilkBowl:VaultAPI:1.7")
+    compileOnly(files("libs/spigot-1.8.8.jar"))
+    compileOnly(files("libs/BungeeCord.jar"))
     compileOnly(files("libs/EduardAPI-1.0-all.jar"))
-    // compileOnly("org.bukkit:spigot:1.8.9")
-    // compileOnly("me.lucko.luckperms:luckperms-api:4.4")
+    api(files("libs/EduardAPI-1.0-all.jar"))
 }
 
 tasks {
     jar {
         destinationDirectory
-            .set(file("D:\\MK Plugins"))
+            .set(file("D:\\MK Plugins\\"))
     }
     compileJava {
         options.encoding = "UTF-8"
@@ -42,6 +43,13 @@ tasks {
     }
     compileTestKotlin {
         kotlinOptions.jvmTarget = "1.8"
+    }
+    shadowJar {
+        archiveVersion.set("1.2")
+        archiveBaseName.set("mkAPI")
+        destinationDirectory.set(
+            file("D:\\Servidor para testes\\plugins\\")
+        )
     }
 }
 publishing {
