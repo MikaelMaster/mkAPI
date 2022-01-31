@@ -21,13 +21,13 @@ public class BungeeMain extends Plugin {
             } else {
                 APIJavaUtils.jarLoaderlog("§cOps, as libs não estão em disco. :c");
                 APIJavaUtils.jarLoaderlog("§eIniciando download de libs...");
-                APIJavaUtils.downloadFile("https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib/1.6.10/kotlin-stdlib-1.6.10.jar", "plugins/mkAPI/libs/kotlin-stdlib-1.6.10.jar");
+                APIJavaUtils.downloadFile("https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib/1.6.10/kotlin-stdlib-1.6.10.jar", "plugins/mkAPIProxy/libs/kotlin-stdlib-1.6.10.jar");
                 APIJavaUtils.jarLoaderlog("§625% concluído(s).");
-                APIJavaUtils.downloadFile("https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib-common/1.6.10/kotlin-stdlib-common-1.6.10.jar", "plugins/mkAPI/libs/kotlin-stdlib-common-1.6.10.jar");
+                APIJavaUtils.downloadFile("https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib-common/1.6.10/kotlin-stdlib-common-1.6.10.jar", "plugins/mkAPIProxy/libs/kotlin-stdlib-common-1.6.10.jar");
                 APIJavaUtils.jarLoaderlog("§650% concluído(s).");
-                APIJavaUtils.downloadFile("https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib-jdk8/1.6.10/kotlin-stdlib-jdk8-1.6.10.jar", "plugins/mkAPI/libs/kotlin-stdlib-jdk8-1.6.10.jar");
+                APIJavaUtils.downloadFile("https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib-jdk8/1.6.10/kotlin-stdlib-jdk8-1.6.10.jar", "plugins/mkAPIProxy/libs/kotlin-stdlib-jdk8-1.6.10.jar");
                 APIJavaUtils.jarLoaderlog("§675% concluído(s).");
-                APIJavaUtils.downloadFile("https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib-jdk7/1.6.10/kotlin-stdlib-jdk7-1.6.10.jar", "plugins/mkAPI/libs/kotlin-stdlib-jdk7-1.6.10.jar");
+                APIJavaUtils.downloadFile("https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib-jdk7/1.6.10/kotlin-stdlib-jdk7-1.6.10.jar", "plugins/mkAPIProxy/libs/kotlin-stdlib-jdk7-1.6.10.jar");
                 APIJavaUtils.jarLoaderlog("§6100% concluído(s).");
                 APIJavaUtils.jarLoaderlog("§aDownload de libs finalizado!");
             }

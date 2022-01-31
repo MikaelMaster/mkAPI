@@ -4,9 +4,13 @@ import net.eduard.api.lib.modules.VaultAPI
 import org.bukkit.Bukkit
 import org.bukkit.entity.Player
 
+fun hasVaultPlugin(): Boolean {
+    return Bukkit.getPluginManager().getPlugin("Vault") != null
+}
+
 fun hasVaultEconomy(): Boolean {
-    return !(Bukkit.getPluginManager().getPlugin("Vault") == null ||
-            !VaultAPI.hasEconomy())
+    if (!hasVaultPlugin()) return false
+    return VaultAPI.hasEconomy()
 }
 
 fun Player.addMoney(amount: Double, world: String? = null) {

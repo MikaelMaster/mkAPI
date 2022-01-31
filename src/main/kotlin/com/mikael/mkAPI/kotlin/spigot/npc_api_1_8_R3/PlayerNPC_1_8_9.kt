@@ -1,5 +1,8 @@
 package com.mikael.mkAPI.kotlin.spigot.npc_api_1_8_R3
 
+import com.mikael.mkAPI.java.spigot.SpigotMain
+import com.mikael.mkAPI.kotlin.spigot.SpigotMainKt
+import com.mikael.mkAPI.kotlin.spigot.SpigotMainKt.asyncDelay
 import com.mojang.authlib.GameProfile
 import com.mojang.authlib.properties.Property
 import net.eduard.api.lib.kotlin.cut
@@ -85,7 +88,7 @@ class PlayerNPC_1_8_9(
 
         */
         nmsWorld.addEntity(npc, CreatureSpawnEvent.SpawnReason.CUSTOM)
-        npc.bukkitEntity.setMetadata("NPC", FixedMetadataValue(PlayerNpcAPI.plugin, true))
+        npc.bukkitEntity.setMetadata("NPC", FixedMetadataValue(SpigotMain.getPlugin(SpigotMain::class.java), true))
         // npc.listName = null
         for (player in Mine.getPlayers()) {
             if (player == getPlayer()) continue
@@ -147,7 +150,7 @@ class PlayerNPC_1_8_9(
         playerConnection.sendPacket(packetPlayerHeadRotation)
         // quando vc quer q o nome do npc fake saia do tab precisa remover ele
 
-        PlayerNpcAPI.plugin.asyncDelay(20) {
+        SpigotMainKt.asyncDelay(20) {
             val packetPlayerInfoRemove = PacketPlayOutPlayerInfo(
                 PacketPlayOutPlayerInfo.EnumPlayerInfoAction.REMOVE_PLAYER,
                 npc

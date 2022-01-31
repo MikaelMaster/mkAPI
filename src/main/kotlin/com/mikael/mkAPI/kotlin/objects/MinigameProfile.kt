@@ -17,4 +17,6 @@ class MinigameProfile : MKPluginData {
 
     var isOnline = false
 
+    var lastLogin = System.currentTimeMillis()
+
 }

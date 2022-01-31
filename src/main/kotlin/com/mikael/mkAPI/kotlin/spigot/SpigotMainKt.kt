@@ -8,9 +8,10 @@ import com.mikael.mkAPI.kotlin.spigot.api.apimanager
 import com.mikael.mkAPI.kotlin.spigot.api.hasVaultEconomy
 import com.mikael.mkAPI.kotlin.spigot.task.AutoUpdateMenusTask
 import com.mikael.mkAPI.kotlin.spigot.task.PlayerTargetAtPlayerTask
-import com.mikael.mkAPI.kotlin.spigot.listener.CustomCommandListener
+import com.mikael.mkAPI.kotlin.spigot.listener.VersionCommandListener
 import com.mikael.mkAPI.kotlin.spigot.listener.MinigameAPIListener
 import com.mikael.mkAPI.kotlin.spigot.listener.ServerBusyListener
+import com.mikael.mkAPI.kotlin.spigot.npc_api_1_8_R3.listener.NPCGeneralListener
 import net.eduard.api.core.BukkitReplacers
 import net.eduard.api.lib.abstraction.Hologram
 import net.eduard.api.lib.config.Config
@@ -62,12 +63,15 @@ object SpigotMainKt : IPlugin, BukkitTimeHandler {
         APIJavaUtils.fastLog("§eCarregando tasks...")
         tasks()
 
-        APIJavaUtils.fastLog("§eCarregando Vault Economy...")
+        APIJavaUtils.fastLog("§eCarregando Vault...")
         if (!hasVaultEconomy()) {
             APIJavaUtils.fastLog("")
             APIJavaUtils.fastLog("§cNão foi possível encontrar o plugin 'Vault' ou não foi possível carregar sua economia. Alguns plugins MK podem não funcionar corretamente.")
             APIJavaUtils.fastLog("")
         }
+        BukkitBungeeAPI.setDebug(false)
+        BukkitBungeeAPI.register(SpigotMain.getPlugin(SpigotMain::class.java))
+        BukkitBungeeAPI.requestCurrentServer()
 
         manager = resolvePut(APIManager())
         DBManager.setDebug(false)
@@ -79,7 +83,7 @@ object SpigotMainKt : IPlugin, BukkitTimeHandler {
             APIJavaUtils.fastLog("§aConexão estabelecida com o MySQL!")
         } else {
             APIJavaUtils.fastLog("")
-            APIJavaUtils.fastLog("§cNão foi possível conectar ao MySQL. Alguns plugins MK podem não funcionar corretamente.")
+            APIJavaUtils.fastLog("§cNão foi possível conectar ao MySQL. Alguns plugins e sistemas MK podem não funcionar corretamente.")
             APIJavaUtils.fastLog("")
         }
 
@@ -89,16 +93,9 @@ object SpigotMainKt : IPlugin, BukkitTimeHandler {
         }
 
         APIJavaUtils.fastLog("§eCarregando sistemas...")
-        ServerBusyListener().registerListener(
-            SpigotMain.getPlugin(
-                SpigotMain::class.java
-            )
-        )
-        CustomCommandListener().registerListener(
-            SpigotMain.getPlugin(
-                SpigotMain::class.java
-            )
-        )
+        ServerBusyListener().registerListener(SpigotMain.getPlugin(SpigotMain::class.java))
+        VersionCommandListener().registerListener(SpigotMain.getPlugin(SpigotMain::class.java))
+        NPCGeneralListener().registerListener(SpigotMain.getPlugin(SpigotMain::class.java))
 
         val endTime = System.currentTimeMillis() - start
         APIJavaUtils.fastLog("§aPlugin ativado com sucesso! (Tempo levado: §f${endTime}ms§a)")
@@ -126,13 +123,16 @@ object SpigotMainKt : IPlugin, BukkitTimeHandler {
     }
 
     private fun minigameAPI() {
-        SpigotMain.mkMinigameAPIEnabled = true
-
-        apimanager.sqlManager.createTable<MinigameProfile>()
-        apimanager.sqlManager.createReferences<MinigameProfile>()
-
-        // Listener
-        MinigameAPIListener().registerListener(SpigotMain.getPlugin(SpigotMain::class.java))
+        if (apimanager.sqlManager.hasConnection()) {
+            SpigotMain.mkMinigameAPIEnabled = true
+            apimanager.sqlManager.createTable<MinigameProfile>()
+            apimanager.sqlManager.createReferences<MinigameProfile>()
+            MinigameAPIListener().registerListener(SpigotMain.getPlugin(SpigotMain::class.java))
+        } else {
+            APIJavaUtils.fastLog("")
+            APIJavaUtils.fastLog("§cNão foi possível carregar o MinigameAPI. Ative o MySQL na config do mkAPI e religue o servidor.")
+            APIJavaUtils.fastLog("")
+        }
     }
 
     private fun storage() {

@@ -1,14 +1,16 @@
 package com.mikael.mkAPI.kotlin.api
 
 import com.mikael.mkAPI.kotlin.objects.MinigameProfile
+import com.mikael.mkAPI.kotlin.spigot.SpigotMainKt
 import com.mikael.mkAPI.kotlin.spigot.api.apimanager
 import net.eduard.api.lib.database.SQLManager
 import net.eduard.api.lib.hybrid.PlayerUser
+import net.eduard.api.lib.kotlin.mineSendActionBar
 import net.eduard.api.lib.kotlin.offline
 import org.bukkit.entity.Player
+import java.util.*
 
 val minigameProfiles = mutableMapOf<PlayerUser, MinigameProfile>()
-
 val minigameProfileSyncKey = Any()
 
 fun PlayerUser.startUserOrUpdate(): MinigameProfile {
@@ -41,7 +43,6 @@ fun startMinigameUserOrUpdate(id: Int): MinigameProfile {
     val player = user.player
     return startMinigameUserOrUpdateReal(player)
 }
-
 class APIManager {
     companion object {
         lateinit var instance: APIManager

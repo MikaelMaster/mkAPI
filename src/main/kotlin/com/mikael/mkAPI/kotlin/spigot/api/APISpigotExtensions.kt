@@ -1,6 +1,7 @@
 package com.mikael.mkAPI.kotlin.spigot.api
 
 import com.mikael.mkAPI.kotlin.api.APIManager
+import com.mikael.mkAPI.kotlin.utils.soundNo
 import net.eduard.api.lib.kotlin.resolve
 import org.bukkit.entity.Player
 
@@ -11,6 +12,7 @@ fun Player.runCommand(thing: () -> (Unit)) {
         thing.invoke()
     } catch (ex: Exception) {
         ex.printStackTrace()
+        this.soundNo()
         this.sendMessage("§cOcorreu um erro interno ao executar este comando.")
     }
 }
