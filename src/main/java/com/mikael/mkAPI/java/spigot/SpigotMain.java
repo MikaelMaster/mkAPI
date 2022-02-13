@@ -10,6 +10,7 @@ public class SpigotMain extends JavaPlugin {
 
     public static Boolean serverEnabled = false;
     public static Boolean mkMinigameAPIEnabled = false;
+    public static Boolean mkBungeeAPIEnabled = false;
 
     static {
         try {

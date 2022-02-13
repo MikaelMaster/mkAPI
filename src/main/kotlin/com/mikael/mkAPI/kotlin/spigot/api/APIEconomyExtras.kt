@@ -14,15 +14,11 @@ fun hasVaultEconomy(): Boolean {
 }
 
 fun Player.addMoney(amount: Double, world: String? = null) {
-    if (Bukkit.getPluginManager().getPlugin("Vault") == null ||
-        !VaultAPI.hasEconomy()
-    ) error("Cannot get Vault Economy")
+    if (!hasVaultPlugin() || !VaultAPI.hasEconomy()) error("Cannot get Vault Economy")
     VaultAPI.getEconomy().depositPlayer(this, world, amount)
 }
 
 fun Player.removeMoney(amount: Double, world: String? = null) {
-    if (Bukkit.getPluginManager().getPlugin("Vault") == null ||
-        !VaultAPI.hasEconomy()
-    ) error("Cannot get Vault Economy")
+    if (!hasVaultPlugin() || !VaultAPI.hasEconomy()) error("Cannot get Vault Economy")
     VaultAPI.getEconomy().withdrawPlayer(this, world, amount)
 }

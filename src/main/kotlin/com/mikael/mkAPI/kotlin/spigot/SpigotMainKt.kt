@@ -4,6 +4,7 @@ import com.mikael.mkAPI.java.APIJavaUtils
 import com.mikael.mkAPI.java.spigot.SpigotMain
 import com.mikael.mkAPI.kotlin.api.APIManager
 import com.mikael.mkAPI.kotlin.objects.MinigameProfile
+import com.mikael.mkAPI.kotlin.objects.SpigotServerData
 import com.mikael.mkAPI.kotlin.spigot.api.apimanager
 import com.mikael.mkAPI.kotlin.spigot.api.hasVaultEconomy
 import com.mikael.mkAPI.kotlin.spigot.task.AutoUpdateMenusTask
@@ -12,8 +13,10 @@ import com.mikael.mkAPI.kotlin.spigot.listener.VersionCommandListener
 import com.mikael.mkAPI.kotlin.spigot.listener.MinigameAPIListener
 import com.mikael.mkAPI.kotlin.spigot.listener.ServerBusyListener
 import com.mikael.mkAPI.kotlin.spigot.npc_api_1_8_R3.listener.NPCGeneralListener
+import com.mikael.mkAPI.kotlin.utils.InvunerableEntitySystem
 import net.eduard.api.core.BukkitReplacers
 import net.eduard.api.lib.abstraction.Hologram
+import net.eduard.api.lib.bungee.BungeeAPI
 import net.eduard.api.lib.config.Config
 import net.eduard.api.lib.database.BukkitTypes
 import net.eduard.api.lib.database.DBManager
@@ -29,7 +32,6 @@ import net.eduard.api.lib.plugin.IPlugin
 import net.eduard.api.lib.score.DisplayBoard
 import net.eduard.api.lib.storage.StorageAPI
 import net.eduard.api.lib.storage.storables.BukkitStorables
-import net.eduard.api.listener.HooksListener
 import org.bukkit.Bukkit
 import org.bukkit.plugin.Plugin
 import java.io.File
@@ -56,10 +58,9 @@ object SpigotMainKt : IPlugin, BukkitTimeHandler {
         config.saveConfig()
         reloadConfig() // x1
         reloadConfig() // x2
+        StorageAPI.updateReferences()
         APIJavaUtils.fastLog("§eCarregando extras...")
         reload()
-        APIJavaUtils.fastLog("§eCarregando eventos...")
-        events()
         APIJavaUtils.fastLog("§eCarregando tasks...")
         tasks()
 
@@ -69,9 +70,9 @@ object SpigotMainKt : IPlugin, BukkitTimeHandler {
             APIJavaUtils.fastLog("§cNão foi possível encontrar o plugin 'Vault' ou não foi possível carregar sua economia. Alguns plugins MK podem não funcionar corretamente.")
             APIJavaUtils.fastLog("")
         }
-        BukkitBungeeAPI.setDebug(false)
         BukkitBungeeAPI.register(SpigotMain.getPlugin(SpigotMain::class.java))
         BukkitBungeeAPI.requestCurrentServer()
+        BungeeAPI.bukkit.register(SpigotMain.getPlugin(SpigotMain::class.java))
 
         manager = resolvePut(APIManager())
         DBManager.setDebug(false)
@@ -87,6 +88,11 @@ object SpigotMainKt : IPlugin, BukkitTimeHandler {
             APIJavaUtils.fastLog("")
         }
 
+        if (config.getBoolean("BungeeAPI.isEnable")) {
+            APIJavaUtils.fastLog("§eCarregando BungeeAPI...")
+            bungeeAPI()
+        }
+
         if (config.getBoolean("enable-minigameAPI")) {
             APIJavaUtils.fastLog("§eCarregando MinigameAPI...")
             minigameAPI()
@@ -96,14 +102,15 @@ object SpigotMainKt : IPlugin, BukkitTimeHandler {
         ServerBusyListener().registerListener(SpigotMain.getPlugin(SpigotMain::class.java))
         VersionCommandListener().registerListener(SpigotMain.getPlugin(SpigotMain::class.java))
         NPCGeneralListener().registerListener(SpigotMain.getPlugin(SpigotMain::class.java))
+        InvunerableEntitySystem().registerListener(SpigotMain.getPlugin(SpigotMain::class.java))
 
         val endTime = System.currentTimeMillis() - start
         APIJavaUtils.fastLog("§aPlugin ativado com sucesso! (Tempo levado: §f${endTime}ms§a)")
 
-        syncDelay(20L) {
+        syncDelay(20) {
             SpigotMain.serverEnabled = true
             APIJavaUtils.fastLog("§aO servidor foi marcado como disponível!")
-            asyncTimer(20L, 20L) {
+            asyncTimer(20, 20) {
                 apimanager.sqlManager.runUpdatesQueue()
                 apimanager.sqlManager.runDeletesQueue()
             }
@@ -118,8 +125,21 @@ object SpigotMainKt : IPlugin, BukkitTimeHandler {
             }
         }
         APIJavaUtils.fastLog("§eDescarregando sistemas...")
+        BungeeAPI.controller.unregister()
         apimanager.dbManager.closeConnection()
         APIJavaUtils.fastLog("§cPlugin desativado!")
+    }
+
+    private fun bungeeAPI() {
+        if (apimanager.sqlManager.hasConnection()) {
+            SpigotMain.mkBungeeAPIEnabled = true
+            apimanager.sqlManager.createTable<SpigotServerData>()
+            apimanager.sqlManager.createReferences<SpigotServerData>()
+        } else {
+            APIJavaUtils.fastLog("")
+            APIJavaUtils.fastLog("§cNão foi possível carregar o MinigameAPI. Ative o MySQL na config do mkAPI e religue o servidor.")
+            APIJavaUtils.fastLog("")
+        }
     }
 
     private fun minigameAPI() {
@@ -147,15 +167,11 @@ object SpigotMainKt : IPlugin, BukkitTimeHandler {
         Hologram.debug = false
         CommandManager.debugEnabled = false
         Copyable.setDebug(false)
-        BukkitBungeeAPI.setDebug(false)
+        BukkitBungeeAPI.setDebuging(false)
         DisplayBoard.colorFix = true
         DisplayBoard.nameLimit = 40
         DisplayBoard.prefixLimit = 16
         DisplayBoard.suffixLimit = 16
-    }
-
-    private fun events() {
-        HooksListener().register(this)
     }
 
     private fun tasks() {
@@ -197,7 +213,7 @@ object SpigotMainKt : IPlugin, BukkitTimeHandler {
         )
         config.add(
             "database-update-limit",
-            50,
+            100,
             "Limite de atualizações por segundo no MySQL.",
             "Não mexa se não sabe o que está fazendo."
         )
@@ -214,6 +230,19 @@ object SpigotMainKt : IPlugin, BukkitTimeHandler {
             "Valores menores de 20 irão causar lag no servidor."
         )
         config.add(
+            "BungeeAPI.isEnable", false, "Se é para ativar o BungeeAPI do mkAPI.",
+            "Plugins MK que trabalham com bungee (mkLobby) precisam dessa função ativa."
+        )
+        config.add(
+            "BungeeAPI.currentServerName", "server-name", "O nome deste servidor spigot perante o bungee.",
+            "Coloque o nome do servidor como ele está na config do bungee."
+        )
+        config.add(
+            "BungeeAPI.currentServerMaxAmount",
+            100,
+            "Quantidade máxima de jogadores deste servidor spigot perante o bungee.",
+        )
+        config.add(
             "enable-minigameAPI", false, "Se é para ativar o MinigameAPI do mkAPI.",
             "Caso você esteja utilizando um plugin MK de minigame (mkBattleRoyale) em seu servidor, habilite essa função."
         )
@@ -227,9 +256,7 @@ object SpigotMainKt : IPlugin, BukkitTimeHandler {
             "§cReiniciando, voltamos em breve!",
             "Mensagem de kick enviada aos jogadores no desligamento do servidor."
         )
-        config.saveConfig() // x1
-        config.saveConfig() // x2
-        StorageAPI.updateReferences()
+        config.saveConfig()
     }
 
     override fun getPlugin(): Any {

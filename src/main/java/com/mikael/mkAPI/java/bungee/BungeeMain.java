@@ -8,6 +8,8 @@ import java.io.IOException;
 
 public class BungeeMain extends Plugin {
 
+    public static Plugin instance;
+
     static {
         try {
             File folder = new File("plugins/mkAPIProxy/libs");
@@ -41,6 +43,7 @@ public class BungeeMain extends Plugin {
 
     @Override
     public void onEnable() {
+        instance = this;
         BungeeMainKt.INSTANCE.onEnable();
     }
 

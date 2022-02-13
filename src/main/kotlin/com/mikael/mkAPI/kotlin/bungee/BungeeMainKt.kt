@@ -3,17 +3,21 @@ package com.mikael.mkAPI.kotlin.bungee
 import com.mikael.mkAPI.java.APIJavaUtils
 import com.mikael.mkAPI.java.bungee.BungeeMain
 import com.mikael.mkAPI.kotlin.api.APIManager
-import com.mikael.mkAPI.kotlin.spigot.SpigotMainKt
+import com.mikael.mkAPI.kotlin.bungee.listener.BungeeGeneralListener
 import com.mikael.mkAPI.kotlin.spigot.api.apimanager
+import net.eduard.api.lib.bungee.BungeeAPI
 import net.eduard.api.lib.config.Config
 import net.eduard.api.lib.database.DBManager
 import net.eduard.api.lib.database.HybridTypes
 import net.eduard.api.lib.database.SQLManager
 import net.eduard.api.lib.hybrid.BungeeServer
 import net.eduard.api.lib.hybrid.Hybrid
+import net.eduard.api.lib.kotlin.register
 import net.eduard.api.lib.kotlin.resolve
 import net.eduard.api.lib.kotlin.resolvePut
+import net.eduard.api.lib.modules.Copyable
 import net.eduard.api.lib.plugin.IPlugin
+import net.eduard.api.lib.storage.StorageAPI
 import java.io.File
 
 val apiBungeeMain = resolve<BungeeMain>()
@@ -31,25 +35,23 @@ object BungeeMainKt : IPlugin {
         val start = System.currentTimeMillis()
 
         APIJavaUtils.fastLog("§eIniciando carregamento...")
-        resolvePut(this)
+        resolvePut(BungeeMain.instance)
         HybridTypes // Carregamento de types 1
 
         APIJavaUtils.fastLog("§eCarregando diretórios...")
-        // storage()
-        config = Config(this, "config.yml")
+        storage()
+        config = Config(BungeeMain.instance, "config.yml")
         config.saveConfig()
-        // reloadConfig() // x1
-        // reloadConfig() // x2
+        reloadConfig() // x1
+        reloadConfig() // x2
+        StorageAPI.updateReferences()
+
         APIJavaUtils.fastLog("§eCarregando extras...")
-        // reload()
-        APIJavaUtils.fastLog("§eCarregando eventos...")
-        // events()
-        APIJavaUtils.fastLog("§eCarregando tasks...")
-        // tasks()
+        reload()
 
         manager = resolvePut(APIManager())
         DBManager.setDebug(false)
-        manager.sqlManager = SQLManager(SpigotMainKt.config["Database", DBManager::class.java])
+        manager.sqlManager = SQLManager(config["Database", DBManager::class.java])
         if (manager.sqlManager.dbManager.isEnabled) {
             APIJavaUtils.fastLog("§eEstabelecendo conexão com o MySQL...")
             apimanager.dbManager.openConnection()
@@ -61,13 +63,52 @@ object BungeeMainKt : IPlugin {
             APIJavaUtils.fastLog("")
         }
 
+        // BungeeAPI
+        BungeeAPI.bungee.register(BungeeMain.instance)
+
+        APIJavaUtils.fastLog("§eCarregando sistemas...")
+        BungeeGeneralListener().register(apiBungeeMain)
 
         val endTime = System.currentTimeMillis() - start
         APIJavaUtils.fastLog("§aPlugin ativado com sucesso! (Tempo levado: §f${endTime}ms§a)")
     }
 
     fun onDisable() {
-        // onDisable aqui
+        APIJavaUtils.fastLog("§eDescarregando sistemas...")
+        apimanager.dbManager.closeConnection()
+        APIJavaUtils.fastLog("§cPlugin desativado!")
+    }
+
+    private fun storage() {
+        StorageAPI.setDebug(false)
+        StorageAPI.startGson()
+    }
+
+    private fun reloadConfig() {
+        /*
+        config.setHeader(
+            "Durante a configuração deste arquivo, para colocar cores em textos você deve utilizar '§' e não '&'.",
+            "Também vale lembrar que não será necessário colocar textos entre aspas."
+        )
+         */
+        config.add(
+            "Database",
+            DBManager(),
+            "Configurações do MySQL.",
+            "A database informada abaixo será utilizada para todos os plugins MK."
+        )
+        config.add(
+            "database-update-limit",
+            100,
+            "Limite de atualizações por segundo no MySQL.",
+            "Não mexa se não sabe o que está fazendo."
+        )
+        config.saveConfig()
+    }
+
+    private fun reload() {
+        Config.isDebug = false
+        Copyable.setDebug(false)
     }
 
     override fun getPlugin(): Any {

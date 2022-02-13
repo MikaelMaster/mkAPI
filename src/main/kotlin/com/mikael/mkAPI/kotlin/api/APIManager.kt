@@ -13,6 +13,8 @@ import java.util.*
 val minigameProfiles = mutableMapOf<PlayerUser, MinigameProfile>()
 val minigameProfileSyncKey = Any()
 
+val bungeeAPISyncKey = Any()
+
 fun PlayerUser.startUserOrUpdate(): MinigameProfile {
     return startMinigameUserOrUpdateReal(this)
 }
@@ -43,6 +45,7 @@ fun startMinigameUserOrUpdate(id: Int): MinigameProfile {
     val player = user.player
     return startMinigameUserOrUpdateReal(player)
 }
+
 class APIManager {
     companion object {
         lateinit var instance: APIManager

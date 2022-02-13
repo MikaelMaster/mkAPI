@@ -1,6 +1,7 @@
 package com.mikael.mkAPI.java;
 
 import net.md_5.bungee.api.ProxyServer;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Bukkit;
 import java.io.*;
 import java.lang.reflect.Method;
@@ -13,7 +14,7 @@ public class APIJavaUtils {
 
     public static void fastLog(String msg) {
         if (isProxyServer()) {
-            ProxyServer.getInstance().getConsole().sendMessage("§b[mkAPIProxy] §f" + msg);
+            ProxyServer.getInstance().getConsole().sendMessage(new TextComponent("§b[mkAPIProxy] §f" + msg));
         } else {
             Bukkit.getConsoleSender().sendMessage("§b[mkAPI] §f" + msg);
         }
@@ -61,7 +62,9 @@ public class APIJavaUtils {
         for (File file : Objects.requireNonNull(libFile.listFiles())) {
             if (file.getName().endsWith(".jar")) {
                 try {
-                    addClassPath(file);
+                    if (!addClassPath(file)) {
+                        throw new IllegalStateException("Cannot load file " + libFile.getName());
+                    }
                 } catch (Exception e) {
                     jarLoaderlog("§cOcorreu um erro ao carregar a jar " + file.getName());
                     e.printStackTrace();
@@ -71,7 +74,7 @@ public class APIJavaUtils {
         jarLoaderlog("§aCarregamento de libs finalizado!");
     }
 
-    private static void addClassPath(final File file) throws Exception {
+    private static boolean addClassPath(final File file) throws Exception {
         URL url = new URL("jar:" + file.toURI().toURL().toExternalForm() + "!/");
         final Object systemClassLoader = ClassLoader
                 .getSystemClassLoader();
@@ -81,13 +84,19 @@ public class APIJavaUtils {
         method.setAccessible(true);
         if (URLClassLoader.class.isAssignableFrom(systemClassLoader.getClass())) {
             method.invoke(systemClassLoader, url);
+            return true;
         } else {
             jarLoaderlog("§cO Java instalado não é compatível com o carregamento das libs.");
+            return false;
         }
     }
 
     public static void jarLoaderlog(String msg) {
-        Bukkit.getConsoleSender().sendMessage("§b[mkAPI JarLoader] §f" + msg);
+        if (isProxyServer()) {
+            ProxyServer.getInstance().getConsole().sendMessage(new TextComponent("§b[mkAPIProxy JarLoader] §f" + msg));
+        } else {
+            Bukkit.getConsoleSender().sendMessage("§b[mkAPI JarLoader] §f" + msg);
+        }
     }
 
 }

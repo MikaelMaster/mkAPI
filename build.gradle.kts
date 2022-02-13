@@ -6,7 +6,7 @@ plugins {
 }
 
 group = "com.mikael"
-version = "1.2"
+version = "1.3"
 
 java.sourceCompatibility = JavaVersion.VERSION_1_8
 java.targetCompatibility = JavaVersion.VERSION_1_8
@@ -45,7 +45,7 @@ tasks {
         kotlinOptions.jvmTarget = "1.8"
     }
     shadowJar {
-        archiveVersion.set("1.2")
+        archiveVersion.set("1.3")
         archiveBaseName.set("mkAPI")
         destinationDirectory.set(
             file("D:\\Servidor para testes\\plugins\\")
