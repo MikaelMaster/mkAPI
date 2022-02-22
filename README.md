@@ -1,2 +1,2 @@
 # mkAPI
- API para desenvolvedores de plugins usando Kotlin.
+ API para desenvolvedores de plugins para Minecraft (Spigot & Bungee) usando Kotlin.
