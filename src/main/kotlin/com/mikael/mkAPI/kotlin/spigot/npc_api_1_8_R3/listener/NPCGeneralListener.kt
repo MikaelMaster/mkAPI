@@ -15,9 +15,11 @@ import org.bukkit.event.player.PlayerTeleportEvent
 class NPCGeneralListener : EventsManager() {
 
     private fun PlayerNPC.needShowNPC(player: Player, before: Location, after: Location) {
+        if (this.getPlayer().world.name != player.world.name) return
         val oldDisctance = before.distance(this.getPlayer().location)
         val newDistance = after.distance(this.getPlayer().location)
-        if (newDistance < oldDisctance && newDistance > 44 && newDistance < 45) {
+        // Fiz uma modificação pra ficar entre 43 e 45. Antes era entre 44 e 45.
+        if (newDistance < oldDisctance && newDistance > 43 && newDistance < 45) {
             this.showFor(player)
         }
     }
@@ -34,11 +36,13 @@ class NPCGeneralListener : EventsManager() {
     fun onPlayerTeleport(e: PlayerTeleportEvent) {
         val player = e.player
         PlayerNpcAPI.npcs.values.forEach { npc ->
-            npc.showFor(player)
+            if (npc.getPlayer().world.name == player.world.name) {
+                npc.showFor(player)
+            }
         }
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.LOWEST)
     fun onPlayerMove(e: PlayerMoveEvent) {
         val player = e.player
         if (e.from.equals(e.to)) return

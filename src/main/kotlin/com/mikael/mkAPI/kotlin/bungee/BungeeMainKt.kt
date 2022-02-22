@@ -3,7 +3,10 @@ package com.mikael.mkAPI.kotlin.bungee
 import com.mikael.mkAPI.java.APIJavaUtils
 import com.mikael.mkAPI.java.bungee.BungeeMain
 import com.mikael.mkAPI.kotlin.api.APIManager
+import com.mikael.mkAPI.kotlin.api.redis.RedisAPI
+import com.mikael.mkAPI.kotlin.api.redis.RedisConnectionData
 import com.mikael.mkAPI.kotlin.bungee.listener.BungeeGeneralListener
+import com.mikael.mkAPI.kotlin.spigot.SpigotMainKt
 import com.mikael.mkAPI.kotlin.spigot.api.apimanager
 import net.eduard.api.lib.bungee.BungeeAPI
 import net.eduard.api.lib.config.Config
@@ -15,14 +18,16 @@ import net.eduard.api.lib.hybrid.Hybrid
 import net.eduard.api.lib.kotlin.register
 import net.eduard.api.lib.kotlin.resolve
 import net.eduard.api.lib.kotlin.resolvePut
+import net.eduard.api.lib.kotlin.store
 import net.eduard.api.lib.modules.Copyable
-import net.eduard.api.lib.plugin.IPlugin
+import net.eduard.api.lib.plugin.IPluginInstance
 import net.eduard.api.lib.storage.StorageAPI
 import java.io.File
+import kotlin.concurrent.thread
 
 val apiBungeeMain = resolve<BungeeMain>()
 
-object BungeeMainKt : IPlugin {
+object BungeeMainKt : IPluginInstance {
 
     lateinit var manager: APIManager
     lateinit var config: Config
@@ -37,6 +42,7 @@ object BungeeMainKt : IPlugin {
         APIJavaUtils.fastLog("§eIniciando carregamento...")
         resolvePut(BungeeMain.instance)
         HybridTypes // Carregamento de types 1
+        store<RedisConnectionData>()
 
         APIJavaUtils.fastLog("§eCarregando diretórios...")
         storage()
@@ -55,12 +61,21 @@ object BungeeMainKt : IPlugin {
         if (manager.sqlManager.dbManager.isEnabled) {
             APIJavaUtils.fastLog("§eEstabelecendo conexão com o MySQL...")
             apimanager.dbManager.openConnection()
-            if (!apimanager.sqlManager.hasConnection()) error("Cannot connect to database")
+            if (!apimanager.sqlManager.hasConnection()) error("Cannot connect to database server")
             APIJavaUtils.fastLog("§aConexão estabelecida com o MySQL!")
         } else {
-            APIJavaUtils.fastLog("")
-            APIJavaUtils.fastLog("§cNão foi possível conectar ao MySQL. Alguns plugins e sistemas MK podem não funcionar corretamente.")
-            APIJavaUtils.fastLog("")
+            APIJavaUtils.fastLog("§cO MySQL não está ativo na Config. Alguns plugins e sistemas MK podem não funcionar corretamente.")
+        }
+
+        RedisAPI.managerData = SpigotMainKt.config["Redis", RedisConnectionData::class.java]
+        if (RedisAPI.managerData.isEnabled) {
+            APIJavaUtils.fastLog("§eEstabelecendo conexão com servidor Redis...")
+            RedisAPI.createClient(RedisAPI.managerData)
+            RedisAPI.connectClient()
+            if (!RedisAPI.isInitialized()) error("Cannot connect to Redis server")
+            APIJavaUtils.fastLog("§aConexão estabelecida com o servidor Redis!")
+        } else {
+            APIJavaUtils.fastLog("§cO Redis não está ativo na Config. Alguns plugins e sistemas MK podem não funcionar corretamente.")
         }
 
         // BungeeAPI
@@ -71,11 +86,22 @@ object BungeeMainKt : IPlugin {
 
         val endTime = System.currentTimeMillis() - start
         APIJavaUtils.fastLog("§aPlugin ativado com sucesso! (Tempo levado: §f${endTime}ms§a)")
+
+        // MySQL queue update timer
+        if (apimanager.sqlManager.hasConnection()) {
+            thread {
+                while (true) {
+                    apimanager.sqlManager.runChanges()
+                    Thread.sleep(1000)
+                }
+            }
+        }
     }
 
     fun onDisable() {
         APIJavaUtils.fastLog("§eDescarregando sistemas...")
         apimanager.dbManager.closeConnection()
+        RedisAPI.finishConnection()
         APIJavaUtils.fastLog("§cPlugin desativado!")
     }
 
@@ -98,10 +124,10 @@ object BungeeMainKt : IPlugin {
             "A database informada abaixo será utilizada para todos os plugins MK."
         )
         config.add(
-            "database-update-limit",
-            100,
-            "Limite de atualizações por segundo no MySQL.",
-            "Não mexa se não sabe o que está fazendo."
+            "Redis",
+            RedisConnectionData(),
+            "Configurações do Redis.",
+            "O servidor Redis informado abaixo será utilizado para todos os plugins MK."
         )
         config.saveConfig()
     }

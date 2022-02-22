@@ -3,6 +3,8 @@ package com.mikael.mkAPI.kotlin.spigot
 import com.mikael.mkAPI.java.APIJavaUtils
 import com.mikael.mkAPI.java.spigot.SpigotMain
 import com.mikael.mkAPI.kotlin.api.APIManager
+import com.mikael.mkAPI.kotlin.api.redis.RedisAPI
+import com.mikael.mkAPI.kotlin.api.redis.RedisConnectionData
 import com.mikael.mkAPI.kotlin.objects.MinigameProfile
 import com.mikael.mkAPI.kotlin.objects.SpigotServerData
 import com.mikael.mkAPI.kotlin.spigot.api.apimanager
@@ -25,18 +27,20 @@ import net.eduard.api.lib.database.SQLManager
 import net.eduard.api.lib.hybrid.BukkitServer
 import net.eduard.api.lib.hybrid.Hybrid
 import net.eduard.api.lib.kotlin.resolvePut
+import net.eduard.api.lib.kotlin.store
 import net.eduard.api.lib.manager.CommandManager
 import net.eduard.api.lib.menu.Menu
 import net.eduard.api.lib.modules.*
-import net.eduard.api.lib.plugin.IPlugin
+import net.eduard.api.lib.plugin.IPluginInstance
 import net.eduard.api.lib.score.DisplayBoard
 import net.eduard.api.lib.storage.StorageAPI
 import net.eduard.api.lib.storage.storables.BukkitStorables
 import org.bukkit.Bukkit
 import org.bukkit.plugin.Plugin
 import java.io.File
+import kotlin.concurrent.thread
 
-object SpigotMainKt : IPlugin, BukkitTimeHandler {
+object SpigotMainKt : IPluginInstance, BukkitTimeHandler {
 
     lateinit var manager: APIManager
     lateinit var config: Config
@@ -50,7 +54,8 @@ object SpigotMainKt : IPlugin, BukkitTimeHandler {
 
         APIJavaUtils.fastLog("§eIniciando carregamento...")
         HybridTypes // Carregamento de types 1
-        BukkitTypes // Carregamento de types 2
+        BukkitTypes.register() // Carregamento de types 2
+        store<RedisConnectionData>()
 
         APIJavaUtils.fastLog("§eCarregando diretórios...")
         storage()
@@ -66,10 +71,11 @@ object SpigotMainKt : IPlugin, BukkitTimeHandler {
 
         APIJavaUtils.fastLog("§eCarregando Vault...")
         if (!hasVaultEconomy()) {
-            APIJavaUtils.fastLog("")
             APIJavaUtils.fastLog("§cNão foi possível encontrar o plugin 'Vault' ou não foi possível carregar sua economia. Alguns plugins MK podem não funcionar corretamente.")
-            APIJavaUtils.fastLog("")
         }
+        VaultAPI.setupVault()
+
+        // BukkitBungeeAPI
         BukkitBungeeAPI.register(SpigotMain.getPlugin(SpigotMain::class.java))
         BukkitBungeeAPI.requestCurrentServer()
         BungeeAPI.bukkit.register(SpigotMain.getPlugin(SpigotMain::class.java))
@@ -80,12 +86,21 @@ object SpigotMainKt : IPlugin, BukkitTimeHandler {
         if (manager.sqlManager.dbManager.isEnabled) {
             APIJavaUtils.fastLog("§eEstabelecendo conexão com o MySQL...")
             apimanager.dbManager.openConnection()
-            if (!apimanager.sqlManager.hasConnection()) error("Cannot connect to database")
+            if (!apimanager.sqlManager.hasConnection()) error("Cannot connect to database server")
             APIJavaUtils.fastLog("§aConexão estabelecida com o MySQL!")
         } else {
-            APIJavaUtils.fastLog("")
-            APIJavaUtils.fastLog("§cNão foi possível conectar ao MySQL. Alguns plugins e sistemas MK podem não funcionar corretamente.")
-            APIJavaUtils.fastLog("")
+            APIJavaUtils.fastLog("§cO MySQL não está ativo na Config. Alguns plugins e sistemas MK podem não funcionar corretamente.")
+        }
+
+        RedisAPI.managerData = config["Redis", RedisConnectionData::class.java]
+        if (RedisAPI.managerData.isEnabled) {
+            APIJavaUtils.fastLog("§eEstabelecendo conexão com servidor Redis...")
+            RedisAPI.createClient(RedisAPI.managerData)
+            RedisAPI.connectClient()
+            if (RedisAPI.client == null || RedisAPI.clientConnection == null) error("Cannot connect to Redis server")
+            APIJavaUtils.fastLog("§aConexão estabelecida com o servidor Redis!")
+        } else {
+            APIJavaUtils.fastLog("§cO Redis não está ativo na Config. Alguns plugins e sistemas MK podem não funcionar corretamente.")
         }
 
         if (config.getBoolean("BungeeAPI.isEnable")) {
@@ -110,9 +125,15 @@ object SpigotMainKt : IPlugin, BukkitTimeHandler {
         syncDelay(20) {
             SpigotMain.serverEnabled = true
             APIJavaUtils.fastLog("§aO servidor foi marcado como disponível!")
-            asyncTimer(20, 20) {
-                apimanager.sqlManager.runUpdatesQueue()
-                apimanager.sqlManager.runDeletesQueue()
+
+            // MySQL queue update timer
+            if (apimanager.sqlManager.hasConnection()) {
+                thread {
+                    while (true) {
+                        apimanager.sqlManager.runChanges()
+                        Thread.sleep(1000)
+                    }
+                }
             }
         }
     }
@@ -127,6 +148,7 @@ object SpigotMainKt : IPlugin, BukkitTimeHandler {
         APIJavaUtils.fastLog("§eDescarregando sistemas...")
         BungeeAPI.controller.unregister()
         apimanager.dbManager.closeConnection()
+        RedisAPI.finishConnection()
         APIJavaUtils.fastLog("§cPlugin desativado!")
     }
 
@@ -137,7 +159,7 @@ object SpigotMainKt : IPlugin, BukkitTimeHandler {
             apimanager.sqlManager.createReferences<SpigotServerData>()
         } else {
             APIJavaUtils.fastLog("")
-            APIJavaUtils.fastLog("§cNão foi possível carregar o MinigameAPI. Ative o MySQL na config do mkAPI e religue o servidor.")
+            APIJavaUtils.fastLog("§cNão foi possível carregar o BungeeAPI. Ative o MySQL na config do mkAPI e religue o servidor.")
             APIJavaUtils.fastLog("")
         }
     }
@@ -212,10 +234,10 @@ object SpigotMainKt : IPlugin, BukkitTimeHandler {
             "A database informada abaixo será utilizada para todos os plugins MK."
         )
         config.add(
-            "database-update-limit",
-            100,
-            "Limite de atualizações por segundo no MySQL.",
-            "Não mexa se não sabe o que está fazendo."
+            "Redis",
+            RedisConnectionData(),
+            "Configurações do Redis.",
+            "O servidor Redis informado abaixo será utilizado para todos os plugins MK."
         )
         config.add(
             "MenuAPI.auto-update-menus",
