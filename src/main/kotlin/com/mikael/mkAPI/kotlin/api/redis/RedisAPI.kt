@@ -1,6 +1,5 @@
 package com.mikael.mkAPI.kotlin.api.redis
 
-import com.mikael.mkAPI.java.APIJavaUtils
 import redis.clients.jedis.Connection
 import redis.clients.jedis.Jedis
 
@@ -69,6 +68,7 @@ object RedisAPI {
 
     /**
      * Verifica se o cliente redis (Jedis) está criado e conectado.
+     *
      * @return True se o cliente redis etiver criado e conectado. Senão, false.
      */
     fun isInitialized(): Boolean {
@@ -78,6 +78,7 @@ object RedisAPI {
 
     /**
      * Envia um ping para o servidor redis.
+     *
      * @return True se o ping for respondido pelo servidor. Senão, false.
      * @throws IllegalStateException se o cliente redis ou a conexão for null.
      */
@@ -89,6 +90,19 @@ object RedisAPI {
         } catch (ex: Exception) {
             false
         }
+    }
+
+    /**
+     * Envia um evento para o servidor redis.
+     * Para registrar um listener no servidor redis você deve fazer isto manualmente.
+     *
+     * @param channelName o nome do canal do redis para enviar o evento.
+     * @param message mensagem que vai ser enviada junto ao evento.
+     * @throws IllegalStateException se o cliente redis ou a conexão for null.
+     */
+    fun sendEvent(channelName: String, message: String) {
+        if (!isInitialized()) error("Cannot send a event message to a null redis server")
+        client!!.publish(channelName, message)
     }
 
 }

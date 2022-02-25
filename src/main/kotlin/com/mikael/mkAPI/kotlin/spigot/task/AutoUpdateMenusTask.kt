@@ -2,6 +2,7 @@ package com.mikael.mkAPI.kotlin.spigot.task
 
 import com.mikael.mkAPI.kotlin.spigot.SpigotMainKt
 import net.eduard.api.lib.manager.TimeManager
+import net.eduard.api.lib.menu.Menu
 import net.eduard.api.lib.menu.getMenu
 import net.eduard.api.lib.modules.Mine
 
@@ -14,6 +15,7 @@ class AutoUpdateMenusTask : TimeManager(SpigotMainKt.config.getLong("MenuAPI.aut
                 val pageOpened = menu.getPageOpen(player)
                 val inventory = player.openInventory.topInventory
                 menu.update(inventory, player, pageOpened, false)
+                Menu
             } catch (ex: Exception) {
                 ex.printStackTrace()
             }

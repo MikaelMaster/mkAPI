@@ -9,6 +9,7 @@ import com.mikael.mkAPI.kotlin.objects.MinigameProfile
 import com.mikael.mkAPI.kotlin.objects.SpigotServerData
 import com.mikael.mkAPI.kotlin.spigot.api.apimanager
 import com.mikael.mkAPI.kotlin.spigot.api.hasVaultEconomy
+import com.mikael.mkAPI.kotlin.spigot.api.plugin.MKPluginInstance
 import com.mikael.mkAPI.kotlin.spigot.task.AutoUpdateMenusTask
 import com.mikael.mkAPI.kotlin.spigot.task.PlayerTargetAtPlayerTask
 import com.mikael.mkAPI.kotlin.spigot.listener.VersionCommandListener
@@ -36,11 +37,12 @@ import net.eduard.api.lib.score.DisplayBoard
 import net.eduard.api.lib.storage.StorageAPI
 import net.eduard.api.lib.storage.storables.BukkitStorables
 import org.bukkit.Bukkit
+import org.bukkit.craftbukkit.libs.org.ibex.nestedvm.util.Seekable
 import org.bukkit.plugin.Plugin
 import java.io.File
 import kotlin.concurrent.thread
 
-object SpigotMainKt : IPluginInstance, BukkitTimeHandler {
+object SpigotMainKt : MKPluginInstance, BukkitTimeHandler {
 
     lateinit var manager: APIManager
     lateinit var config: Config
@@ -281,17 +283,15 @@ object SpigotMainKt : IPluginInstance, BukkitTimeHandler {
         config.saveConfig()
     }
 
-    override fun getPlugin(): Any {
-        return SpigotMain.getPlugin(SpigotMain::class.java)
-    }
+    override val plugin: Any?
+        get() = SpigotMain.getPlugin(SpigotMain::class.java)
 
-    override fun getSystemName(): String {
-        return SpigotMain.getPlugin(SpigotMain::class.java).name
-    }
 
-    override fun getPluginFolder(): File {
-        return SpigotMain.getPlugin(SpigotMain::class.java).dataFolder
-    }
+    override val systemName: String?
+        get() = SpigotMain.getPlugin(SpigotMain::class.java).name
+
+    override val pluginFolder: File?
+        get() = SpigotMain.getPlugin(SpigotMain::class.java).dataFolder
 
     override fun getPluginConnected(): Plugin {
         return SpigotMain.getPlugin(SpigotMain::class.java)

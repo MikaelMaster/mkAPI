@@ -6,7 +6,6 @@ import com.mikael.mkAPI.kotlin.api.APIManager
 import com.mikael.mkAPI.kotlin.api.redis.RedisAPI
 import com.mikael.mkAPI.kotlin.api.redis.RedisConnectionData
 import com.mikael.mkAPI.kotlin.bungee.listener.BungeeGeneralListener
-import com.mikael.mkAPI.kotlin.spigot.SpigotMainKt
 import com.mikael.mkAPI.kotlin.spigot.api.apimanager
 import net.eduard.api.lib.bungee.BungeeAPI
 import net.eduard.api.lib.config.Config
@@ -67,7 +66,7 @@ object BungeeMainKt : IPluginInstance {
             APIJavaUtils.fastLog("§cO MySQL não está ativo na Config. Alguns plugins e sistemas MK podem não funcionar corretamente.")
         }
 
-        RedisAPI.managerData = SpigotMainKt.config["Redis", RedisConnectionData::class.java]
+        RedisAPI.managerData = config["Redis", RedisConnectionData::class.java]
         if (RedisAPI.managerData.isEnabled) {
             APIJavaUtils.fastLog("§eEstabelecendo conexão com servidor Redis...")
             RedisAPI.createClient(RedisAPI.managerData)

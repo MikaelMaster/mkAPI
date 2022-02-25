@@ -4,6 +4,7 @@ class RedisConnectionData(
 
     /**
      * Data para criar um Cliente Redis (Jedis) usando a RedisAPI.
+     *
      * @see RedisAPI
      */
 
