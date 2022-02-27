@@ -36,7 +36,7 @@ fun Player.runCommand(thing: () -> (Unit)) {
     } catch (ex: Exception) {
         ex.printStackTrace()
         this.soundNo()
-        this.sendMessage("§cOcorreu um erro interno ao executar este comando.")
+        this.sendMessage("§cAn internal error occurred while executing this command.")
     }
 }
 
@@ -50,7 +50,7 @@ fun Player.runCommand(thing: () -> (Unit)) {
  */
 fun Player.runCommandAsync(sendLoading: Boolean = false, thing: () -> (Unit)) {
     if (sendLoading) {
-        this.sendMessage("§eCarregando...")
+        this.sendMessage("§eLoading...")
     }
     SpigotMainKt.asyncTask {
         try {
@@ -58,13 +58,13 @@ fun Player.runCommandAsync(sendLoading: Boolean = false, thing: () -> (Unit)) {
         } catch (ex: Exception) {
             ex.printStackTrace()
             this.soundNo()
-            this.sendMessage("§cOcorreu um erro interno ao executar este comando.")
+            this.sendMessage("§cAn internal error occurred while executing this command.")
         }
     }
 }
 
 /**
- * Limpa o inventário do player, incluindo armaduras.
+ * Clears the player's inventory.
  */
 fun Player.clearAllInventory() {
     this.inventory.clear()

@@ -9,7 +9,6 @@ import java.io.*;
 public class SpigotMain extends JavaPlugin {
 
     public static Boolean serverEnabled = false;
-    public static Boolean mkMinigameAPIEnabled = false;
     public static Boolean mkBungeeAPIEnabled = false;
 
     static {
@@ -17,7 +16,7 @@ public class SpigotMain extends JavaPlugin {
             APIJavaUtils.downloadNeedLibs("mkAPI");
         } catch (IOException ex) {
             ex.printStackTrace();
-            APIJavaUtils.jarLoaderlog("§cOcorreu um erro no tratamento das libs.");
+            APIJavaUtils.jarLoaderlog("§cThere was an error handling the libs.");
             APIJavaUtils.shutdownServer();
         }
     }

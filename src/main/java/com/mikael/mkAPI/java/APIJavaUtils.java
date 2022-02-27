@@ -54,28 +54,28 @@ public class APIJavaUtils {
         File slf4jApiLib = new File("plugins/" + pluginFolder + "/libs/slf4j-api-1.7.32.jar");
         File slf4jSimpleLib = new File("plugins/" + pluginFolder + "/libs/slf4j-simple-1.7.32.jar");
         if (ktLib1.exists() && ktLib2.exists() && ktLib3.exists() && ktLib4.exists() && jedisLib.exists() && slf4jApiLib.exists() && slf4jSimpleLib.exists()) {
-            jarLoaderlog("§aTodas as libs já estão em disco.");
+            jarLoaderlog("§aAll the libs are on disk.");
         } else {
-            jarLoaderlog("§cOps, nem todas libs estão em disco.");
-            jarLoaderlog("§eIniciando download de libs...");
-            jarLoaderlog("§6" + getCompletedPercentage(0.0, 7.0) + " concluído(s).");
+            jarLoaderlog("§cOops, the libs are not on disk.");
+            jarLoaderlog("§eStarting libs download...");
+            jarLoaderlog("§6" + getCompletedPercentage(0.0, 7.0) + " completed(s).");
             downloadFile("https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib/1.6.10/kotlin-stdlib-1.6.10.jar", "plugins/" + pluginFolder + "/libs/kotlin-stdlib-1.6.10.jar");
-            jarLoaderlog("§6" + getCompletedPercentage(1.0, 7.0) + " concluído(s).");
+            jarLoaderlog("§6" + getCompletedPercentage(1.0, 7.0) + " completed(s).");
             downloadFile("https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib-common/1.6.10/kotlin-stdlib-common-1.6.10.jar", "plugins/" + pluginFolder + "/libs/kotlin-stdlib-common-1.6.10.jar");
-            jarLoaderlog("§6" + getCompletedPercentage(2.0, 7.0) + " concluído(s).");
+            jarLoaderlog("§6" + getCompletedPercentage(2.0, 7.0) + " completed(s).");
             downloadFile("https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib-jdk8/1.6.10/kotlin-stdlib-jdk8-1.6.10.jar", "plugins/" + pluginFolder + "/libs/kotlin-stdlib-jdk8-1.6.10.jar");
-            jarLoaderlog("§6" + getCompletedPercentage(3.0, 7.0) + " concluído(s).");
+            jarLoaderlog("§6" + getCompletedPercentage(3.0, 7.0) + " completed(s).");
             downloadFile("https://repo.maven.apache.org/maven2/org/jetbrains/kotlin/kotlin-stdlib-jdk7/1.6.10/kotlin-stdlib-jdk7-1.6.10.jar", "plugins/" + pluginFolder + "/libs/kotlin-stdlib-jdk7-1.6.10.jar");
-            jarLoaderlog("§6" + getCompletedPercentage(4.0, 7.0) + " concluído(s).");
+            jarLoaderlog("§6" + getCompletedPercentage(4.0, 7.0) + " completed(s).");
             downloadFile("https://repo1.maven.org/maven2/redis/clients/jedis/4.1.1/jedis-4.1.1.jar", "plugins/" + pluginFolder + "/libs/jedis-4.1.1.jar");
-            jarLoaderlog("§6" + getCompletedPercentage(5.0, 7.0) + " concluído(s).");
+            jarLoaderlog("§6" + getCompletedPercentage(5.0, 7.0) + " completed(s).");
             downloadFile("https://repo1.maven.org/maven2/org/slf4j/slf4j-api/1.7.32/slf4j-api-1.7.32.jar", "plugins/" + pluginFolder + "/libs/slf4j-api-1.7.32.jar");
-            jarLoaderlog("§6" + getCompletedPercentage(6.0, 7.0) + " concluído(s).");
+            jarLoaderlog("§6" + getCompletedPercentage(6.0, 7.0) + " completed(s).");
             downloadFile("https://repo1.maven.org/maven2/org/slf4j/slf4j-simple/1.7.32/slf4j-simple-1.7.32.jar", "plugins/" + pluginFolder + "/libs/slf4j-simple-1.7.32.jar");
-            jarLoaderlog("§6" + getCompletedPercentage(7.0, 7.0) + " concluído(s).");
-            jarLoaderlog("§aDownload de libs finalizado!");
+            jarLoaderlog("§6" + getCompletedPercentage(7.0, 7.0) + " completed(s).");
+            jarLoaderlog("§aLibs download has been finished!");
         }
-        jarLoaderlog("§eIniciando carregamento de libs...");
+        jarLoaderlog("§eStarting libs loading...");
         loadLibraries(folder);
     }
 
@@ -107,12 +107,12 @@ public class APIJavaUtils {
                         throw new IllegalStateException("Cannot load file " + libFile.getName());
                     }
                 } catch (Exception e) {
-                    jarLoaderlog("§cOcorreu um erro ao carregar o jar " + file.getName());
+                    jarLoaderlog("§cThere was an error loading the jar " + file.getName());
                     e.printStackTrace();
                 }
             }
         }
-        jarLoaderlog("§aCarregamento de libs finalizado!");
+        jarLoaderlog("§aFinished libs loading!");
     }
 
     private static boolean addClassPath(final File file) throws Exception {
@@ -127,7 +127,7 @@ public class APIJavaUtils {
             method.invoke(systemClassLoader, url);
             return true;
         } else {
-            jarLoaderlog("§cO Java instalado não é compatível com o carregamento das libs.");
+            jarLoaderlog("§cCannot load libs using the installed java.");
             return false;
         }
     }

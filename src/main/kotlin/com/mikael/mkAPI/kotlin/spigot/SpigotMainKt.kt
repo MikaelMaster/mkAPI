@@ -5,7 +5,7 @@ import com.mikael.mkAPI.java.spigot.SpigotMain
 import com.mikael.mkAPI.kotlin.api.APIManager
 import com.mikael.mkAPI.kotlin.api.redis.RedisAPI
 import com.mikael.mkAPI.kotlin.api.redis.RedisConnectionData
-import com.mikael.mkAPI.kotlin.objects.MinigameProfile
+import com.mikael.mkAPI.kotlin.bungee.BungeeMainKt
 import com.mikael.mkAPI.kotlin.objects.SpigotServerData
 import com.mikael.mkAPI.kotlin.spigot.api.apimanager
 import com.mikael.mkAPI.kotlin.spigot.api.hasVaultEconomy
@@ -13,7 +13,6 @@ import com.mikael.mkAPI.kotlin.spigot.api.plugin.MKPluginInstance
 import com.mikael.mkAPI.kotlin.spigot.task.AutoUpdateMenusTask
 import com.mikael.mkAPI.kotlin.spigot.task.PlayerTargetAtPlayerTask
 import com.mikael.mkAPI.kotlin.spigot.listener.VersionCommandListener
-import com.mikael.mkAPI.kotlin.spigot.listener.MinigameAPIListener
 import com.mikael.mkAPI.kotlin.spigot.listener.ServerBusyListener
 import com.mikael.mkAPI.kotlin.spigot.npc_api_1_8_R3.listener.NPCGeneralListener
 import com.mikael.mkAPI.kotlin.utils.InvunerableEntitySystem
@@ -32,13 +31,12 @@ import net.eduard.api.lib.kotlin.store
 import net.eduard.api.lib.manager.CommandManager
 import net.eduard.api.lib.menu.Menu
 import net.eduard.api.lib.modules.*
-import net.eduard.api.lib.plugin.IPluginInstance
 import net.eduard.api.lib.score.DisplayBoard
 import net.eduard.api.lib.storage.StorageAPI
 import net.eduard.api.lib.storage.storables.BukkitStorables
 import org.bukkit.Bukkit
-import org.bukkit.craftbukkit.libs.org.ibex.nestedvm.util.Seekable
 import org.bukkit.plugin.Plugin
+import org.bukkit.scheduler.BukkitRunnable
 import java.io.File
 import kotlin.concurrent.thread
 
@@ -46,6 +44,7 @@ object SpigotMainKt : MKPluginInstance, BukkitTimeHandler {
 
     lateinit var manager: APIManager
     lateinit var config: Config
+    lateinit var messages: Config
 
     init {
         Hybrid.instance = BukkitServer
@@ -54,26 +53,31 @@ object SpigotMainKt : MKPluginInstance, BukkitTimeHandler {
     fun onEnable() {
         val start = System.currentTimeMillis()
 
-        APIJavaUtils.fastLog("§eIniciando carregamento...")
+        APIJavaUtils.fastLog("§eStarting loading...")
         HybridTypes // Carregamento de types 1
         BukkitTypes.register() // Carregamento de types 2
         store<RedisConnectionData>()
 
-        APIJavaUtils.fastLog("§eCarregando diretórios...")
+        APIJavaUtils.fastLog("§eLoading directories...")
         storage()
         config = Config(SpigotMain.getPlugin(SpigotMain::class.java), "config.yml")
         config.saveConfig()
         reloadConfig() // x1
         reloadConfig() // x2
+        messages = Config(SpigotMain.getPlugin(SpigotMain::class.java), "messages.yml")
+        messages.saveConfig()
+        reloadMessages()// x1
+        reloadMessages()// x2
         StorageAPI.updateReferences()
-        APIJavaUtils.fastLog("§eCarregando extras...")
+
+        APIJavaUtils.fastLog("§eLoading extras...")
         reload()
-        APIJavaUtils.fastLog("§eCarregando tasks...")
+        APIJavaUtils.fastLog("§eStarting tasks...")
         tasks()
 
-        APIJavaUtils.fastLog("§eCarregando Vault...")
+        APIJavaUtils.fastLog("§eLoading VaultAPI...")
         if (!hasVaultEconomy()) {
-            APIJavaUtils.fastLog("§cNão foi possível encontrar o plugin 'Vault' ou não foi possível carregar sua economia. Alguns plugins MK podem não funcionar corretamente.")
+            APIJavaUtils.fastLog("§cCan't get 'Vault' plugin or can't get their economy. Some plugins and MK systems may not work correctly.")
         }
         VaultAPI.setupVault()
 
@@ -86,23 +90,35 @@ object SpigotMainKt : MKPluginInstance, BukkitTimeHandler {
         DBManager.setDebug(false)
         manager.sqlManager = SQLManager(config["Database", DBManager::class.java])
         if (manager.sqlManager.dbManager.isEnabled) {
-            APIJavaUtils.fastLog("§eEstabelecendo conexão com o MySQL...")
+            APIJavaUtils.fastLog("§eConnecting to MySQL database...")
             apimanager.dbManager.openConnection()
-            if (!apimanager.sqlManager.hasConnection()) error("Cannot connect to database server")
-            APIJavaUtils.fastLog("§aConexão estabelecida com o MySQL!")
+            if (!apimanager.sqlManager.hasConnection()) error("Cannot connect to MySQL database")
+            APIJavaUtils.fastLog("§aConnected to MySQL database!")
         } else {
-            APIJavaUtils.fastLog("§cO MySQL não está ativo na Config. Alguns plugins e sistemas MK podem não funcionar corretamente.")
+            APIJavaUtils.fastLog("§cThe MySQL is not active on the config file. Some plugins and MK systems may not work correctly.")
         }
 
         RedisAPI.managerData = config["Redis", RedisConnectionData::class.java]
         if (RedisAPI.managerData.isEnabled) {
-            APIJavaUtils.fastLog("§eEstabelecendo conexão com servidor Redis...")
+            APIJavaUtils.fastLog("§eConnecting to Redis server...")
             RedisAPI.createClient(RedisAPI.managerData)
             RedisAPI.connectClient()
-            if (RedisAPI.client == null || RedisAPI.clientConnection == null) error("Cannot connect to Redis server")
-            APIJavaUtils.fastLog("§aConexão estabelecida com o servidor Redis!")
+            if (!RedisAPI.isInitialized()) error("Cannot connect to Redis server")
+            APIJavaUtils.fastLog("§aConnected to Redis server!")
+            object : BukkitRunnable() {
+                override fun run() {
+                    if (!RedisAPI.testPing()) {
+                        try {
+                            RedisAPI.connectClient(true)
+                        } catch (ex: Exception) {
+                            ex.printStackTrace()
+                            error("Cannot reconnect to Redis server")
+                        }
+                    }
+                }
+            }.runTaskTimer(SpigotMain.getPlugin(SpigotMain::class.java), 20, 20)
         } else {
-            APIJavaUtils.fastLog("§cO Redis não está ativo na Config. Alguns plugins e sistemas MK podem não funcionar corretamente.")
+            APIJavaUtils.fastLog("§cThe Redis is not active on the config file. Some plugins and MK systems may not work correctly.")
         }
 
         if (config.getBoolean("BungeeAPI.isEnable")) {
@@ -110,25 +126,20 @@ object SpigotMainKt : MKPluginInstance, BukkitTimeHandler {
             bungeeAPI()
         }
 
-        if (config.getBoolean("enable-minigameAPI")) {
-            APIJavaUtils.fastLog("§eCarregando MinigameAPI...")
-            minigameAPI()
-        }
-
-        APIJavaUtils.fastLog("§eCarregando sistemas...")
+        APIJavaUtils.fastLog("§eLoading systems...")
         ServerBusyListener().registerListener(SpigotMain.getPlugin(SpigotMain::class.java))
         VersionCommandListener().registerListener(SpigotMain.getPlugin(SpigotMain::class.java))
         NPCGeneralListener().registerListener(SpigotMain.getPlugin(SpigotMain::class.java))
         InvunerableEntitySystem().registerListener(SpigotMain.getPlugin(SpigotMain::class.java))
 
         val endTime = System.currentTimeMillis() - start
-        APIJavaUtils.fastLog("§aPlugin ativado com sucesso! (Tempo levado: §f${endTime}ms§a)")
+        APIJavaUtils.fastLog("§aPlugin loaded with success! (Time taken: §f${endTime}ms§a)")
 
         syncDelay(20) {
             SpigotMain.serverEnabled = true
-            APIJavaUtils.fastLog("§aO servidor foi marcado como disponível!")
+            APIJavaUtils.fastLog("§aThe server has been marked as available!")
 
-            // MySQL queue update timer
+            // MySQL queue updater timer
             if (apimanager.sqlManager.hasConnection()) {
                 thread {
                     while (true) {
@@ -141,40 +152,31 @@ object SpigotMainKt : MKPluginInstance, BukkitTimeHandler {
     }
 
     fun onDisable() {
-        if (config.getBoolean("CustomKick.enable-custom-kick")) {
-            APIJavaUtils.fastLog("§eDesconectando jogadores...")
+        if (config.getBoolean("CustomKick.isEnabled")) {
+            APIJavaUtils.fastLog("§eDisconnecting players...")
             for (playerLoop in Bukkit.getOnlinePlayers()) {
-                playerLoop.kickPlayer(config.getString("CustomKick.custom-kick-message"))
+                playerLoop.kickPlayer(config.getString("CustomKick.customKickMessage"))
             }
         }
-        APIJavaUtils.fastLog("§eDescarregando sistemas...")
+        APIJavaUtils.fastLog("§eUnloading systems...")
         BungeeAPI.controller.unregister()
         apimanager.dbManager.closeConnection()
         RedisAPI.finishConnection()
-        APIJavaUtils.fastLog("§cPlugin desativado!")
+        APIJavaUtils.fastLog("§cPlugin unloaded!")
     }
 
     private fun bungeeAPI() {
         if (apimanager.sqlManager.hasConnection()) {
+            if (config.getBoolean("BungeeAPI.useRedisCache")) {
+                if (!RedisAPI.isInitialized()) error("Cannot get the Redis client for the BungeeAPI")
+                // Continuação do código aqui
+            }
             SpigotMain.mkBungeeAPIEnabled = true
             apimanager.sqlManager.createTable<SpigotServerData>()
             apimanager.sqlManager.createReferences<SpigotServerData>()
         } else {
             APIJavaUtils.fastLog("")
-            APIJavaUtils.fastLog("§cNão foi possível carregar o BungeeAPI. Ative o MySQL na config do mkAPI e religue o servidor.")
-            APIJavaUtils.fastLog("")
-        }
-    }
-
-    private fun minigameAPI() {
-        if (apimanager.sqlManager.hasConnection()) {
-            SpigotMain.mkMinigameAPIEnabled = true
-            apimanager.sqlManager.createTable<MinigameProfile>()
-            apimanager.sqlManager.createReferences<MinigameProfile>()
-            MinigameAPIListener().registerListener(SpigotMain.getPlugin(SpigotMain::class.java))
-        } else {
-            APIJavaUtils.fastLog("")
-            APIJavaUtils.fastLog("§cNão foi possível carregar o MinigameAPI. Ative o MySQL na config do mkAPI e religue o servidor.")
+            APIJavaUtils.fastLog("§cCan't load the BungeeAPI. Turn on the MySQL in the config file of mkAPI and restart the server.")
             APIJavaUtils.fastLog("")
         }
     }
@@ -201,7 +203,7 @@ object SpigotMainKt : MKPluginInstance, BukkitTimeHandler {
     private fun tasks() {
         resetScoreboards()
         BukkitReplacers()
-        if (config.getBoolean("MenuAPI.auto-update-menus")) {
+        if (config.getBoolean("MenuAPI.autoUpdateMenus")) {
             AutoUpdateMenusTask().asyncTimer()
         }
         PlayerTargetAtPlayerTask().asyncTimer()
@@ -223,69 +225,67 @@ object SpigotMainKt : MKPluginInstance, BukkitTimeHandler {
     }
 
     private fun reloadConfig() {
-        /*
-        config.setHeader(
-            "Durante a configuração deste arquivo, para colocar cores em textos você deve utilizar '§' e não '&'.",
-            "Também vale lembrar que não será necessário colocar textos entre aspas."
-        )
-         */
         config.add(
             "Database",
             DBManager(),
-            "Configurações do MySQL.",
-            "A database informada abaixo será utilizada para todos os plugins MK."
+            "Config of MySQL database.",
+            "All the plugins that use the mkAPI will use this MySQL database."
         )
         config.add(
             "Redis",
             RedisConnectionData(),
-            "Configurações do Redis.",
-            "O servidor Redis informado abaixo será utilizado para todos os plugins MK."
+            "Config of Redis server.",
+            "All the plugins that use the mkAPI will use this Redis server."
         )
         config.add(
-            "MenuAPI.auto-update-menus",
+            "MenuAPI.autoUpdateMenus",
             true,
-            "Se é pra atualizar os menus abertos.",
-            "ATENÇÃO: Para servidores de Rank UP e Factions é aconselhável deixar o auto update DESATIVADO."
+            "Whether to update the open menus.",
         )
         config.add(
-            "MenuAPI.auto-update-ticks",
+            "MenuAPI.autoUpdateTicks",
             60,
-            "Tempo para atualizar menus abertos de jogadores.",
-            "Valores menores de 20 irão causar lag no servidor."
+            "Time to refresh players open menus.",
+            "Values less than 20 will cause server lag. 20 ticks = 1s."
         )
         config.add(
-            "BungeeAPI.isEnable", false, "Se é para ativar o BungeeAPI do mkAPI.",
-            "Plugins MK que trabalham com bungee (mkLobby) precisam dessa função ativa."
+            "BungeeAPI.isEnabled", false, "Whether to activate the BungeeAPI."
         )
         config.add(
-            "BungeeAPI.currentServerName", "server-name", "O nome deste servidor spigot perante o bungee.",
-            "Coloque o nome do servidor como ele está na config do bungee."
+            "BungeeAPI.useRedisCache", false,
+            "Whether to use Redis to improve the server performance.",
+            "You CAN'T active this if you're not using a Redis servidor on mkAPI."
+        )
+        config.add(
+            "BungeeAPI.currentServerName", "server",
+            "The name of this spigot server before bungee.",
+            "Put the server name as it is in the bungee config."
         )
         config.add(
             "BungeeAPI.currentServerMaxAmount",
             100,
-            "Quantidade máxima de jogadores deste servidor spigot perante o bungee.",
+            "Maximum number of players on this spigot server.",
         )
         config.add(
-            "enable-minigameAPI", false, "Se é para ativar o MinigameAPI do mkAPI.",
-            "Caso você esteja utilizando um plugin MK de minigame (mkBattleRoyale) em seu servidor, habilite essa função."
-        )
-        config.add(
-            "CustomKick.enable-custom-kick",
+            "CustomKick.isEnabled",
             true,
-            "Se é para kickar os jogadores no desligamento do servidor."
+            "Whether to kick players on server shutdown."
         )
         config.add(
-            "CustomKick.custom-kick-message",
-            "§cReiniciando, voltamos em breve!",
-            "Mensagem de kick enviada aos jogadores no desligamento do servidor."
+            "CustomKick.customKickMessage",
+            "§cRestarting, we'll back soon!",
+            "Kick message sent to players on server shutdown."
         )
         config.saveConfig()
     }
 
+    private fun reloadMessages() {
+        messages.add("busy-server-msg", "§cThe server is busy. Try again in a few seconds.")
+        messages.saveConfig()
+    }
+
     override val plugin: Any?
         get() = SpigotMain.getPlugin(SpigotMain::class.java)
-
 
     override val systemName: String?
         get() = SpigotMain.getPlugin(SpigotMain::class.java).name

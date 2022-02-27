@@ -16,7 +16,7 @@ public class BungeeMain extends Plugin {
             APIJavaUtils.downloadNeedLibs("mkAPIProxy");
         } catch (IOException ex) {
             ex.printStackTrace();
-            APIJavaUtils.jarLoaderlog("§cOcorreu um erro no tratamento das libs.");
+            APIJavaUtils.jarLoaderlog("§cThere was an error handling the libs.");
             APIJavaUtils.shutdownServer();
         }
     }

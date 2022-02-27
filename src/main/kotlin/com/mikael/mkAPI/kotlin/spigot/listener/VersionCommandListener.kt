@@ -13,7 +13,7 @@ class VersionCommandListener : EventsManager() {
         if (!e.message.equals("/mkapi", true)) return
         val player = e.player
         val mkAPIPlugin = SpigotMain.getPlugin(SpigotMain::class.java)
-        player.sendMessage("§a${mkAPIPlugin.name} §ev${mkAPIPlugin.description.version} §f- §bdesenvolvido por Mikael.")
+        player.sendMessage("§a${mkAPIPlugin.name} §ev${mkAPIPlugin.description.version} §f- §bdeveloped by Mikael.")
         e.isCancelled = true
     }
 

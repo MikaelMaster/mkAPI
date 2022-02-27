@@ -6,7 +6,7 @@ import net.eduard.api.lib.menu.Menu
 import net.eduard.api.lib.menu.getMenu
 import net.eduard.api.lib.modules.Mine
 
-class AutoUpdateMenusTask : TimeManager(SpigotMainKt.config.getLong("MenuAPI.auto-update-ticks")) {
+class AutoUpdateMenusTask : TimeManager(SpigotMainKt.config.getLong("MenuAPI.autoUpdateTicks")) {
 
     override fun run() {
         for (player in Mine.getPlayers()) {

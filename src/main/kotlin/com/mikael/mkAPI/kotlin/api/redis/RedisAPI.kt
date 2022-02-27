@@ -6,11 +6,11 @@ import redis.clients.jedis.Jedis
 object RedisAPI {
 
     /**
-     * RedisAPI v1.0b (Using Jedis v4.1.1)
+     * RedisAPI v1.1 (Using Jedis v4.1.1)
      *
-     * Lembre-se que na config do mkAPI você pode ativar esta API automaticamente marcando o 'isEnabled' do Redis como true.
-     * Esta API ainda não tem suporte a ser ativada e utilizada em plugins diferentes ao mesmo tempo com Clientes diferentes.
-     * Você sempre deve criar um único Cliente Redis e utilizar ele em todos os seus plugins.
+     * Remember that in the mkAPI config you can enable this API automatically by setting Redis' 'isEnabled' to true.
+     * This API is not yet supported to be activated and used in different plugins at the same time with different Clients.
+     * You should always create a single Redis Client and use it in all your plugins.
      *
      * @author Mikael
      * @see RedisConnectionData
@@ -21,12 +21,12 @@ object RedisAPI {
     var clientConnection: Connection? = null
 
     /**
-     * Cria um novo cliente redis (Jedis) utilizando os dados fornecidos pelo RedisConnectionData.
-     * Após a criação define a variável 'client' para o novo cliente criado.
+     * Creates a new redis client (Jedis) using the data provided by RedisConnectionData.
+     * After creation sets the 'client' variable to the new created client.
      *
-     * @param connectionData Uma RedisConnectionData para criar o Cliente Redis.
-     * @return Um cliente redis (Jedis).
-     * @throws IllegalStateException se o 'isEnabled' da RedisConnectionData fornecida for false.
+     * @param connectionData A RedisConnectionData to create the Redis Client.
+     * @return A redis client (Jedis).
+     * @throws IllegalStateException if the 'isEnabled' of the given RedisConnectionData is false.
      * @see connectClient
      */
     fun createClient(connectionData: RedisConnectionData): Jedis {
@@ -40,17 +40,19 @@ object RedisAPI {
     }
 
     /**
-     * Conecta o cliente (Jedis) caso ele ainda não esteja conectado.
-     * Caso o cliente já esteja conectado, ele apenas retornará a conexão existente.
+     * Connects the client (Jedis) if it is not already connected.
+     * If the client is already connected, it will just return the existing connection.
      *
-     * @return Uma conexão Jedis existente.
-     * @throws IllegalStateException se o cliente do RedisAPI for nulo.
+     * @return An existing Jedis connection.
+     * @throws IllegalStateException if the RedisAPI client is null.
      * @see createClient
      */
-    fun connectClient(): Connection {
+    fun connectClient(force: Boolean = false): Connection {
         if (client == null) error("Cannot get redis client (Jedis)")
-        if (clientConnection != null) {
-            return clientConnection!!
+        if (!force) {
+            if (clientConnection != null) {
+                return clientConnection!!
+            }
         }
         client!!.connect()
         clientConnection = client!!.connection
@@ -58,7 +60,7 @@ object RedisAPI {
     }
 
     /**
-     * Fecha a conexão existente com o servidor redis, e depois marca a variável 'clientConnection' e 'client' como null.
+     * Closes the existing connection to the redis server, and then sets the variable 'clientConnection' and 'client' to null.
      */
     fun finishConnection() {
         clientConnection?.close()
@@ -67,9 +69,9 @@ object RedisAPI {
     }
 
     /**
-     * Verifica se o cliente redis (Jedis) está criado e conectado.
+     * Checks if the redis client (Jedis) is created and connected.
      *
-     * @return True se o cliente redis etiver criado e conectado. Senão, false.
+     * @return True if the redis client is created and connected. Otherwise, false.
      */
     fun isInitialized(): Boolean {
         if (client == null || clientConnection == null) return false
@@ -77,10 +79,10 @@ object RedisAPI {
     }
 
     /**
-     * Envia um ping para o servidor redis.
+     * Sends a ping to Redis server.
      *
-     * @return True se o ping for respondido pelo servidor. Senão, false.
-     * @throws IllegalStateException se o cliente redis ou a conexão for null.
+     * @return True if the ping is answered. Otherwise, false.
+     * @throws IllegalStateException if the Redis client or the connection is null.
      */
     fun testPing(): Boolean {
         if (!isInitialized()) error("Cannot send ping to a null redis server")
@@ -93,12 +95,11 @@ object RedisAPI {
     }
 
     /**
-     * Envia um evento para o servidor redis.
-     * Para registrar um listener no servidor redis você deve fazer isto manualmente.
+     * Send a 'event' to Redis server.
      *
-     * @param channelName o nome do canal do redis para enviar o evento.
-     * @param message mensagem que vai ser enviada junto ao evento.
-     * @throws IllegalStateException se o cliente redis ou a conexão for null.
+     * @param channelName the redis channel name to send the event.
+     * @param message message that will be sent with the event.
+     * @throws IllegalStateException if the Redis client or the connection is null.
      */
     fun sendEvent(channelName: String, message: String) {
         if (!isInitialized()) error("Cannot send a event message to a null redis server")

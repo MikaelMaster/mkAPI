@@ -2,11 +2,13 @@ package com.mikael.mkAPI.kotlin.bungee
 
 import com.mikael.mkAPI.java.APIJavaUtils
 import com.mikael.mkAPI.java.bungee.BungeeMain
+import com.mikael.mkAPI.java.spigot.SpigotMain
 import com.mikael.mkAPI.kotlin.api.APIManager
 import com.mikael.mkAPI.kotlin.api.redis.RedisAPI
 import com.mikael.mkAPI.kotlin.api.redis.RedisConnectionData
 import com.mikael.mkAPI.kotlin.bungee.listener.BungeeGeneralListener
 import com.mikael.mkAPI.kotlin.spigot.api.apimanager
+import com.mikael.mkAPI.kotlin.spigot.api.plugin.MKPluginInstance
 import net.eduard.api.lib.bungee.BungeeAPI
 import net.eduard.api.lib.config.Config
 import net.eduard.api.lib.database.DBManager
@@ -21,12 +23,14 @@ import net.eduard.api.lib.kotlin.store
 import net.eduard.api.lib.modules.Copyable
 import net.eduard.api.lib.plugin.IPluginInstance
 import net.eduard.api.lib.storage.StorageAPI
+import net.md_5.bungee.api.ProxyServer
 import java.io.File
+import java.util.concurrent.TimeUnit
 import kotlin.concurrent.thread
 
 val apiBungeeMain = resolve<BungeeMain>()
 
-object BungeeMainKt : IPluginInstance {
+object BungeeMainKt : MKPluginInstance {
 
     lateinit var manager: APIManager
     lateinit var config: Config
@@ -38,12 +42,12 @@ object BungeeMainKt : IPluginInstance {
     fun onEnable() {
         val start = System.currentTimeMillis()
 
-        APIJavaUtils.fastLog("§eIniciando carregamento...")
+        APIJavaUtils.fastLog("§eStarting loading...")
         resolvePut(BungeeMain.instance)
         HybridTypes // Carregamento de types 1
         store<RedisConnectionData>()
 
-        APIJavaUtils.fastLog("§eCarregando diretórios...")
+        APIJavaUtils.fastLog("§eloading directories...")
         storage()
         config = Config(BungeeMain.instance, "config.yml")
         config.saveConfig()
@@ -51,42 +55,54 @@ object BungeeMainKt : IPluginInstance {
         reloadConfig() // x2
         StorageAPI.updateReferences()
 
-        APIJavaUtils.fastLog("§eCarregando extras...")
+        APIJavaUtils.fastLog("§eLoading extras...")
         reload()
 
         manager = resolvePut(APIManager())
         DBManager.setDebug(false)
         manager.sqlManager = SQLManager(config["Database", DBManager::class.java])
         if (manager.sqlManager.dbManager.isEnabled) {
-            APIJavaUtils.fastLog("§eEstabelecendo conexão com o MySQL...")
+            APIJavaUtils.fastLog("§eConnecting to MySQL database...")
             apimanager.dbManager.openConnection()
-            if (!apimanager.sqlManager.hasConnection()) error("Cannot connect to database server")
-            APIJavaUtils.fastLog("§aConexão estabelecida com o MySQL!")
+            if (!apimanager.sqlManager.hasConnection()) error("Cannot connect to MySQL database")
+            APIJavaUtils.fastLog("§aConnected to MySQL database!")
         } else {
-            APIJavaUtils.fastLog("§cO MySQL não está ativo na Config. Alguns plugins e sistemas MK podem não funcionar corretamente.")
+            APIJavaUtils.fastLog("§cThe MySQL is not active on the config file. Some plugins and MK systems may not work correctly.")
         }
 
         RedisAPI.managerData = config["Redis", RedisConnectionData::class.java]
         if (RedisAPI.managerData.isEnabled) {
-            APIJavaUtils.fastLog("§eEstabelecendo conexão com servidor Redis...")
+            APIJavaUtils.fastLog("§eConnecting to Redis server...")
             RedisAPI.createClient(RedisAPI.managerData)
             RedisAPI.connectClient()
             if (!RedisAPI.isInitialized()) error("Cannot connect to Redis server")
-            APIJavaUtils.fastLog("§aConexão estabelecida com o servidor Redis!")
+            APIJavaUtils.fastLog("§aConnected to Redis server!")
+            ProxyServer.getInstance().scheduler.schedule(
+                BungeeMain.instance, {
+                    if (!RedisAPI.testPing()) {
+                        try {
+                            RedisAPI.connectClient(true)
+                        } catch (ex: Exception) {
+                            ex.printStackTrace()
+                            error("Cannot reconnect to Redis server")
+                        }
+                    }
+                }, 1, 1, TimeUnit.SECONDS
+            )
         } else {
-            APIJavaUtils.fastLog("§cO Redis não está ativo na Config. Alguns plugins e sistemas MK podem não funcionar corretamente.")
+            APIJavaUtils.fastLog("§cThe Redis is not active on the config file. Some plugins and MK systems may not work correctly.")
         }
 
         // BungeeAPI
         BungeeAPI.bungee.register(BungeeMain.instance)
 
-        APIJavaUtils.fastLog("§eCarregando sistemas...")
+        APIJavaUtils.fastLog("§eLoading systems...")
         BungeeGeneralListener().register(apiBungeeMain)
 
         val endTime = System.currentTimeMillis() - start
-        APIJavaUtils.fastLog("§aPlugin ativado com sucesso! (Tempo levado: §f${endTime}ms§a)")
+        APIJavaUtils.fastLog("§aPlugin loaded with success! (Time taken: §f${endTime}ms§a)")
 
-        // MySQL queue update timer
+        // MySQL queue updater timer
         if (apimanager.sqlManager.hasConnection()) {
             thread {
                 while (true) {
@@ -98,10 +114,10 @@ object BungeeMainKt : IPluginInstance {
     }
 
     fun onDisable() {
-        APIJavaUtils.fastLog("§eDescarregando sistemas...")
+        APIJavaUtils.fastLog("§eUnloading systems...")
         apimanager.dbManager.closeConnection()
         RedisAPI.finishConnection()
-        APIJavaUtils.fastLog("§cPlugin desativado!")
+        APIJavaUtils.fastLog("§cPlugin unloaded!")
     }
 
     private fun storage() {
@@ -110,23 +126,17 @@ object BungeeMainKt : IPluginInstance {
     }
 
     private fun reloadConfig() {
-        /*
-        config.setHeader(
-            "Durante a configuração deste arquivo, para colocar cores em textos você deve utilizar '§' e não '&'.",
-            "Também vale lembrar que não será necessário colocar textos entre aspas."
-        )
-         */
         config.add(
             "Database",
             DBManager(),
-            "Configurações do MySQL.",
-            "A database informada abaixo será utilizada para todos os plugins MK."
+            "Config of MySQL database.",
+            "All the plugins that use the mkAPI will use this MySQL database."
         )
         config.add(
             "Redis",
             RedisConnectionData(),
-            "Configurações do Redis.",
-            "O servidor Redis informado abaixo será utilizado para todos os plugins MK."
+            "Config of Redis server.",
+            "All the plugins that use the mkAPI will use this Redis server."
         )
         config.saveConfig()
     }
@@ -136,16 +146,12 @@ object BungeeMainKt : IPluginInstance {
         Copyable.setDebug(false)
     }
 
-    override fun getPlugin(): Any {
-        return this
-    }
+    override val plugin: Any?
+        get() = SpigotMain.getPlugin(SpigotMain::class.java)
 
-    override fun getSystemName(): String {
-        return apiBungeeMain.description.name
-    }
+    override val systemName: String?
+        get() = SpigotMain.getPlugin(SpigotMain::class.java).name
 
-    override fun getPluginFolder(): File {
-        return apiBungeeMain.file
-    }
-
+    override val pluginFolder: File?
+        get() = SpigotMain.getPlugin(SpigotMain::class.java).dataFolder
 }

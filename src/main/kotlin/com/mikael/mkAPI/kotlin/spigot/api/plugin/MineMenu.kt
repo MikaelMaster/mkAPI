@@ -22,6 +22,7 @@ import java.util.*
 import java.util.function.Consumer
 import java.util.function.Function
 
+/*
 inline fun menu(title: String, lineAmount: Int, setup: MineMenu.() -> Unit): MineMenu {
     val menu = MineMenu(title, lineAmount)
     setup.invoke(menu)
@@ -51,6 +52,9 @@ fun Player.getMenu(): MineMenu? {
     return null
 }
 
+ */
+
+/*
 open class MineMenu(var title: String, var lineAmount: Int) : EventsManager() {
 
     constructor(title: String) : this(title, 3)
@@ -832,3 +836,5 @@ open class MineMenu(var title: String, var lineAmount: Int) : EventsManager() {
     }
 
 }
+
+ */
