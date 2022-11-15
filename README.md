@@ -1,3 +1,6 @@
-# mkAPI - NOT UPDATE ANYMORE (Now I'm using mkUtils-- mkAPI was used for legacy 1.8 plugins)
+# mkAPI - NO MORE UPDATES! (Now I'm using mkUtils for Minecraft version *1.17--recent*, and mkUtilsLegacy for Minecraft version 1.8_R3.)
  API to develop plugins for Spigot and Bungee using the Kotlin as main language.
- Tutorials about how to use systems and functions of mkAPI will be added soon.
+ You can see my NEW API for Minecraft development here:
+ * https://github.com/MikaelMaster/mkUtils (for Minecraft version 1.17--recent)
+ * https://github.com/MikaelMaster/mkUtilsLegacy (for Minecraft version 1.8_R3)
+ Bot APIs above are still receiving updates! (mkUtils AND mkUtilsLegcy!)
